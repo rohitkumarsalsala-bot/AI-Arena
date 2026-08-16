@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Arena</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  margin:0;
+  background:#080808;
+  color:white;
+  font-family:Arial,sans-serif;
+  text-align:center;
+  overflow:hidden;
+}
+
+h1{
+  margin:15px 0 8px;
+  font-size:42px;
+}
+
+.info{
+  font-size:25px;
+  margin-bottom:12px;
+}
+
+#game{
+  width:92vw;
+  max-width:650px;
+  height:70vh;
+  margin:auto;
+  border:5px solid white;
+  background:#202020;
+  position:relative;
+  overflow:hidden;
+}
+
+.player,.enemy,.target{
+  position:absolute;
+  border-radius:50%;
+}
+
+.player{
+  width:70px;
+  height:70px;
+  background:#08a8ee;
+  box-shadow:0 0 15px #08a8ee;
+}
+
+.enemy{
+  width:75px;
+  height:75px;
+  background:#ff3030;
+}
+
+.target{
+  width:55px;
+  height:55px;
+  background:#ffd000;
+  box-shadow:0 0 25px #ffd000;
+}
+
+.controls{
+  width:260px;
+  margin:15px auto;
+  display:grid;
+  grid-template-columns:80px 80px 80px;
+  gap:8px;
+  justify-content:center;
+}
+
+button{
+  border:0;
+  border-radius:15px;
+  background:#333;
+  color:white;
+  font-size:32px;
+  height:65px;
+  font-weight:bold;
+}
+
+button:active{
+  background:#555;
+  transform:scale(.95);
+}
+
+.attack{
+  background:#8b1111;
+  font-size:22px;
+}
+
+#gameOver{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.88);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:10;
+}
+
+#gameOver h2{
+  font-size:48px;
+  margin:10px;
+}
+
+#gameOver p{
+  font-size:25px;
+}
+
+.playAgain{
+  padding:15px 30px;
+  height:auto;
+  font-size:22px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🤖 AI ARENA</h1>
+
+<div class="info">
+⭐ Score: <span id="score">0</span>
+&nbsp; | &nbsp;
+❤️ Lives: <span id="lives">3</span>
+</div>
+
+<div id="game">
+
+  <div id="player" class="player"></div>
+  <div id="enemy" class="enemy"></div>
+  <div id="target" class="target"></div>
+
+  <div id="gameOver">
+    <h2>💥 GAME OVER</h2>
+    <p>⭐ Final Score: <span id="finalScore">0</span></p>
+    <button class="playAgain" onclick="startGame()">🔄 PLAY AGAIN</button>
+  </div>
+
+</div>
+
+<div class="controls">
+
+  <div></div>
+  <button onclick="move(0,-1)">⬆️</button>
+  <div></div>
+
+  <button onclick="move(-1,0)">⬅️</button>
+  <button class="attack" onclick="attack()">⚔️ HIT</button>
+  <button onclick="move(1,0)">➡️</button>
+
+  <div></div>
+  <button onclick="move(0,1)">⬇️</button>
+  <div></div>
+
+</div>
+
+<script>
+
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const enemy = document.getElementById("enemy");
+const target = document.getElementById("target");
+
+const scoreText = document.getElementById("score");
+const livesText = document.getElementById("lives");
+const gameOver = document.getElementById("gameOver");
+const finalScore = document.getElementById("finalScore");
+
+let playerX = 100;
+let playerY = 100;
+
+let enemyX = 300;
+let enemyY = 300;
+
+let targetX = 450;
+let targetY = 150;
+
+let score = 0;
+let lives = 3;
+let running = false;
+
+const speed = 25;
+
+function update(){
+
+  player.style.left = playerX + "px";
+  player.style.top = playerY + "px";
+
+  enemy.style.left = enemyX + "px";
+  enemy.style.top = enemyY + "px";
+
+  target.style.left = targetX + "px";
+  target.style.top = targetY + "px";
+
+}
+
+function move(dx,dy){
+
+  if(!running) return;
+
+  playerX += dx * speed;
+  playerY += dy * speed;
+
+  const maxX = game.clientWidth - 70;
+  const maxY = game.clientHeight - 70;
+
+  playerX = Math.max(0,Math.min(playerX,maxX));
+  playerY = Math.max(0,Math.min(playerY,maxY));
+
+  update();
+  checkCollision();
+
+}
+
+function randomPosition(){
+
+  enemyX = Math.random() *
+    (game.clientWidth - 75);
+
+  enemyY = Math.random() *
+    (game.clientHeight - 75);
+
+  targetX = Math.random() *
+    (game.clientWidth - 55);
+
+  targetY = Math.random() *
+    (game.clientHeight - 55);
+
+  update();
+}
+
+function distance(x1,y1,x2,y2){
+
+  return Math.sqrt(
+    Math.pow(x1-x2,2) +
+    Math.pow(y1-y2,2)
+  );
+
+}
+
+function checkCollision(){
+
+  const d = distance(
+    playerX,
+    playerY,
+    enemyX,
+    enemyY
+  );
+
+  if(d < 65){
+
+    lives--;
+
+    livesText.textContent = lives;
+
+    playerX = 50;
+    playerY = 50;
+
+    randomPosition();
+
+    if(lives <= 0){
+      endGame();
+    }
+
+  }
+
+  const t = distance(
+    playerX,
+    playerY,
+    targetX,
+    targetY
+  );
+
+  if(t < 55){
+
+    score++;
+
+    scoreText.textContent = score;
+
+    targetX = Math.random() *
+      (game.clientWidth - 55);
+
+    targetY = Math.random() *
+      (game.clientHeight - 55);
+
+    update();
+
+  }
+
+}
+
+function attack(){
+
+  if(!running) return;
+
+  const d = distance(
+    playerX,
+    playerY,
+    enemyX,
+    enemyY
+  );
+
+  if(d < 130){
+
+    score++;
+
+    scoreText.textContent = score;
+
+    randomPosition();
+
+  }
+
+}
+
+function enemyAI(){
+
+  if(!running) return;
+
+  const dx = playerX - enemyX;
+  const dy = playerY - enemyY;
+
+  const d = Math.sqrt(dx*dx + dy*dy);
+
+  if(d > 1){
+
+    enemyX += (dx/d) * 2;
+    enemyY += (dy/d) * 2;
+
+  }
+
+  update();
+  checkCollision();
+
+}
+
+function startGame(){
+
+  score = 0;
+  lives = 3;
+
+  playerX = 50;
+  playerY = 50;
+
+  scoreText.textContent = score;
+  livesText.textContent = lives;
+
+  gameOver.style.display = "none";
+
+  running = true;
+
+  randomPosition();
+  update();
+
+}
+
+function endGame(){
+
+  running = false;
+
+  finalScore.textContent = score;
+
+  gameOver.style.display = "flex";
+
+}
+
+document.addEventListener("keydown",function(e){
+
+  if(e.key === "ArrowUp")
+    move(0,-1);
+
+  if(e.key === "ArrowDown")
+    move(0,1);
+
+  if(e.key === "ArrowLeft")
+    move(-1,0);
+
+  if(e.key === "ArrowRight")
+    move(1,0);
+
+  if(e.code === "Space"){
+    e.preventDefault();
+    attack();
+  }
+
+});
+
+setInterval(enemyAI,50);
+
+startGame();
+
+</script>
+
+</body>
+</html>
